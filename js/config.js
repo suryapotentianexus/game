@@ -9,7 +9,7 @@
 const CONFIG = {
   // ── ElevenLabs credentials ──────────────────────────────────────────────────
   // Get your free key at https://elevenlabs.io → Profile → API Keys
-  ELEVENLABS_API_KEY: "sk_b2b529271b2deb2db528f82b50d81979de5a04e83920200c",
+  ELEVENLABS_API_KEY: "",
 
   // Create a Conversational AI agent at https://elevenlabs.io/conversational-ai
   // Paste the agent's System Prompt from ABHIMANYU_AGENT_SYSTEM_PROMPT below,
@@ -59,7 +59,7 @@ const CONFIG = {
   },
 
   // ElevenLabs TTS model
-  TTS_MODEL: "eleven_multilingual_v2",
+  TTS_MODEL: "eleven_monolingual_v1",
 
   // ── World geometry ──────────────────────────────────────────────────────────
   WORLD: {
