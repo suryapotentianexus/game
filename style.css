@@ -1,0 +1,914 @@
+/* ============================================================
+   PADMAVYUH — VOICES OF DHARMA
+   style.css — Dark, mythological, atmospheric UI styling
+   ============================================================ */
+
+/* ----------------------------------------------------------
+   RESET & BASE
+   ---------------------------------------------------------- */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --gold-deep: #b8860b;
+    --gold-light: #e8d5a3;
+    --gold-bright: #ffd700;
+    --gold-muted: #a07830;
+    --gold-faint: rgba(184, 134, 11, 0.15);
+    --gold-border: rgba(184, 134, 11, 0.4);
+    --gold-glow: rgba(255, 215, 0, 0.35);
+
+    --bg-void: #050508;
+    --bg-panel: rgba(5, 5, 8, 0.92);
+    --bg-overlay: rgba(5, 5, 8, 0.75);
+
+    --purple-deep: #1a0a2e;
+    --purple-mid: #2d1b4e;
+    --blue-deep: #060b1a;
+
+    --text-parchment: #e8d5a3;
+    --text-muted: #8a7050;
+    --text-faint: rgba(232, 213, 163, 0.4);
+
+    --red-warn: #c0392b;
+    --amber-warn: #e67e22;
+
+    --radius-sm: 4px;
+    --radius-md: 8px;
+
+    --transition-fast: 0.2s ease;
+    --transition-med: 0.5s ease;
+    --transition-slow: 1.2s ease;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg-void);
+    color: var(--text-parchment);
+    font-family: Georgia, "Times New Roman", serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ----------------------------------------------------------
+   CANVAS — Full-screen game surface
+   ---------------------------------------------------------- */
+#gameCanvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: block;
+    z-index: 0;
+    background: var(--bg-void);
+}
+
+/* ----------------------------------------------------------
+   UI OVERLAY — Sits above the canvas
+   ---------------------------------------------------------- */
+#ui-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 10;
+    pointer-events: none; /* children opt-in individually */
+}
+
+/* ----------------------------------------------------------
+   UTILITY — Hidden state
+   ---------------------------------------------------------- */
+.hidden {
+    display: none !important;
+}
+
+/* ----------------------------------------------------------
+   SCREEN — Full-size centered panels
+   ---------------------------------------------------------- */
+.screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: all;
+    z-index: 20;
+}
+
+/* ----------------------------------------------------------
+   CINEMATIC BARS — Top & bottom letterbox bars
+   ---------------------------------------------------------- */
+.cinematic-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 0;
+    background: #000;
+    transition: height 1s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 50;
+    pointer-events: none;
+}
+
+.cinematic-bar.top {
+    top: 0;
+}
+
+.cinematic-bar.bottom {
+    bottom: 0;
+}
+
+.cinematic-bar.active {
+    height: 80px;
+}
+
+/* ----------------------------------------------------------
+   TITLE SCREEN
+   ---------------------------------------------------------- */
+#title-screen {
+    background: radial-gradient(
+        ellipse at 50% 60%,
+        #0d0a1a 0%,
+        #080610 50%,
+        var(--bg-void) 100%
+    );
+    gap: 0;
+}
+
+/* Subtle vignette overlay */
+#title-screen::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+        ellipse at center,
+        transparent 30%,
+        rgba(0, 0, 0, 0.7) 100%
+    );
+    pointer-events: none;
+}
+
+.title-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.2rem;
+    position: relative;
+    z-index: 1;
+    animation: fadeIn 2s ease both;
+}
+
+/* Sanskrit subtitle above the main title */
+.title-sanskrit {
+    font-size: 1.8rem;
+    color: var(--gold-deep);
+    letter-spacing: 0.4em;
+    text-transform: none;
+    opacity: 0.85;
+    font-style: normal;
+    margin-bottom: 0.2rem;
+    text-shadow:
+        0 0 20px rgba(184, 134, 11, 0.5),
+        0 0 40px rgba(184, 134, 11, 0.2);
+}
+
+/* Main title */
+#title-screen h1 {
+    font-size: clamp(3rem, 8vw, 6rem);
+    font-family: Georgia, serif;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--gold-bright);
+    text-shadow:
+        0 0 20px rgba(255, 215, 0, 0.6),
+        0 0 60px rgba(255, 215, 0, 0.3),
+        0 0 120px rgba(255, 215, 0, 0.15);
+    line-height: 1;
+    animation: glow 4s ease-in-out infinite;
+}
+
+/* Tagline */
+.title-tagline {
+    font-size: 0.85rem;
+    font-variant: small-caps;
+    letter-spacing: 0.5em;
+    color: var(--gold-muted);
+    text-transform: uppercase;
+    margin-top: 0.3rem;
+}
+
+/* Decorative divider */
+.title-divider {
+    width: 200px;
+    height: 1px;
+    background: linear-gradient(
+        to right,
+        transparent,
+        var(--gold-deep),
+        transparent
+    );
+    margin: 0.8rem 0;
+    opacity: 0.6;
+}
+
+/* Headphone warning */
+.title-warning {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    letter-spacing: 0.12em;
+    text-align: center;
+    max-width: 380px;
+    line-height: 1.6;
+    opacity: 0.75;
+    margin-top: 0.5rem;
+}
+
+.title-warning strong {
+    color: var(--gold-muted);
+    font-weight: normal;
+}
+
+/* Start button */
+#start-btn {
+    margin-top: 2rem;
+    padding: 1rem 3rem;
+    background: transparent;
+    border: 1px solid var(--gold-deep);
+    color: var(--gold-light);
+    font-family: Georgia, serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition:
+        border-color var(--transition-fast),
+        color var(--transition-fast),
+        box-shadow var(--transition-fast),
+        text-shadow var(--transition-fast);
+    pointer-events: all;
+}
+
+#start-btn:hover,
+#start-btn:focus-visible {
+    border-color: var(--gold-bright);
+    color: var(--gold-bright);
+    box-shadow:
+        0 0 20px rgba(255, 215, 0, 0.25),
+        0 0 60px rgba(255, 215, 0, 0.1),
+        inset 0 0 20px rgba(255, 215, 0, 0.05);
+    text-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+    outline: none;
+}
+
+#start-btn:active {
+    transform: scale(0.97);
+}
+
+/* ----------------------------------------------------------
+   LOADING SCREEN
+   ---------------------------------------------------------- */
+#loading-screen {
+    background: var(--bg-void);
+    gap: 1.5rem;
+}
+
+.loading-text {
+    font-size: 0.8rem;
+    letter-spacing: 0.4em;
+    color: var(--gold-deep);
+    text-transform: uppercase;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+#loading-message {
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    min-height: 1em;
+    transition: opacity var(--transition-med);
+}
+
+#loading-bar-container {
+    width: 300px;
+    height: 1px;
+    background: rgba(184, 134, 11, 0.12);
+    position: relative;
+    overflow: visible;
+}
+
+#loading-bar {
+    height: 100%;
+    width: 0%;
+    background: var(--gold-deep);
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow:
+        0 0 8px var(--gold-bright),
+        0 0 20px rgba(255, 215, 0, 0.4);
+    position: relative;
+}
+
+/* Glowing tip on the loading bar */
+#loading-bar::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--gold-bright);
+    box-shadow:
+        0 0 6px var(--gold-bright),
+        0 0 12px var(--gold-bright);
+}
+
+/* ----------------------------------------------------------
+   DIALOGUE BOX
+   ---------------------------------------------------------- */
+#dialogue-box {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(700px, 90vw);
+    background: var(--bg-panel);
+    border: 1px solid var(--gold-border);
+    border-radius: var(--radius-md);
+    padding: 1.5rem 2rem;
+    pointer-events: none;
+    z-index: 30;
+    opacity: 1;
+    transition:
+        opacity var(--transition-med),
+        border-color 0.5s ease;
+
+    /* Subtle inner glow */
+    box-shadow:
+        0 0 40px rgba(0, 0, 0, 0.8),
+        inset 0 1px 0 rgba(184, 134, 11, 0.1);
+
+    /* Left accent bar */
+    border-left: 2px solid var(--gold-deep);
+}
+
+#dialogue-box.fade-out {
+    opacity: 0;
+}
+
+#speaker-name {
+    font-size: 0.65rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--gold-deep);
+    margin-bottom: 0.6rem;
+    font-family: Georgia, serif;
+}
+
+#dialogue-text {
+    font-size: 1rem;
+    line-height: 1.75;
+    color: var(--text-parchment);
+    font-style: italic;
+}
+
+/* ----------------------------------------------------------
+   RING INDICATOR — Top-center progress dots
+   ---------------------------------------------------------- */
+#ring-indicator {
+    position: fixed;
+    top: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    pointer-events: none;
+    z-index: 35;
+}
+
+.ring-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1px solid var(--gold-deep);
+    background: transparent;
+    transition:
+        background var(--transition-med),
+        box-shadow var(--transition-med),
+        border-color var(--transition-med);
+}
+
+.ring-dot.passed {
+    background: var(--gold-deep);
+    border-color: var(--gold-bright);
+    box-shadow:
+        0 0 6px var(--gold-bright),
+        0 0 12px rgba(255, 215, 0, 0.4);
+}
+
+.ring-dot.current {
+    border-color: var(--gold-bright);
+    border-width: 1.5px;
+    animation: pulseDot 1.8s ease-in-out infinite;
+}
+
+/* Connector lines between dots */
+.ring-dot:not(:last-child)::after {
+    content: "";
+    display: block;
+    position: absolute;
+}
+
+/* ----------------------------------------------------------
+   HUD — Top-right status
+   ---------------------------------------------------------- */
+#hud {
+    position: fixed;
+    top: 20px;
+    right: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    pointer-events: none;
+    z-index: 35;
+}
+
+#hud-items {
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    color: var(--gold-muted);
+    text-transform: uppercase;
+}
+
+#hud-ring-name {
+    font-size: 0.6rem;
+    letter-spacing: 0.3em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-style: italic;
+}
+
+/* ----------------------------------------------------------
+   STILLNESS WARNING — Ring 3 meditation prompt
+   ---------------------------------------------------------- */
+#stillness-warning {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+    z-index: 40;
+    animation: pulseWarning 2.5s ease-in-out infinite;
+}
+
+#stillness-warning .warn-line-1 {
+    display: block;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    letter-spacing: 0.2em;
+    color: var(--amber-warn);
+    text-transform: uppercase;
+    text-shadow:
+        0 0 20px rgba(230, 126, 34, 0.6),
+        0 0 40px rgba(230, 126, 34, 0.3);
+    line-height: 1.1;
+}
+
+#stillness-warning .warn-line-2 {
+    display: block;
+    font-size: clamp(1rem, 2.5vw, 1.6rem);
+    letter-spacing: 0.4em;
+    color: rgba(230, 126, 34, 0.7);
+    font-style: italic;
+    margin-top: 0.5rem;
+}
+
+/* ----------------------------------------------------------
+   CONVERSATION UI — Climax scene with Abhimanyu
+   ---------------------------------------------------------- */
+#conversation-ui {
+    background: radial-gradient(
+        ellipse at 50% 30%,
+        #0a0818 0%,
+        var(--bg-void) 70%
+    );
+    padding: 3rem 2rem;
+    gap: 1.5rem;
+    justify-content: flex-start;
+    overflow: hidden;
+}
+
+#conv-header {
+    font-size: 0.7rem;
+    letter-spacing: 0.5em;
+    color: var(--gold-muted);
+    text-transform: uppercase;
+    margin-top: 2rem;
+    margin-bottom: 0.5rem;
+    text-align: center;
+    opacity: 0.8;
+}
+
+#conv-title {
+    font-size: clamp(1.4rem, 3vw, 2rem);
+    letter-spacing: 0.15em;
+    color: var(--gold-light);
+    text-align: center;
+    margin-bottom: 1.5rem;
+    text-shadow: 0 0 30px rgba(232, 213, 163, 0.3);
+}
+
+/* Conversation history scroll area */
+#abhimanyu-lines {
+    width: min(720px, 92vw);
+    max-height: 50vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+    padding: 1rem 0.5rem;
+    scroll-behavior: smooth;
+}
+
+/* Subtle scrollbar */
+#abhimanyu-lines::-webkit-scrollbar {
+    width: 3px;
+}
+#abhimanyu-lines::-webkit-scrollbar-track {
+    background: transparent;
+}
+#abhimanyu-lines::-webkit-scrollbar-thumb {
+    background: var(--gold-border);
+    border-radius: 2px;
+}
+
+/* Individual conversation entries */
+.conv-entry {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    animation: fadeIn 0.6s ease both;
+    max-width: 85%;
+}
+
+.conv-entry .conv-speaker {
+    font-size: 0.6rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    opacity: 0.6;
+}
+
+.conv-entry .conv-text {
+    font-size: 1rem;
+    line-height: 1.7;
+    padding: 0.8rem 1.1rem;
+    border-radius: var(--radius-md);
+}
+
+/* Player entries — right-aligned, understated */
+.conv-entry.player {
+    align-self: flex-end;
+    align-items: flex-end;
+}
+
+.conv-entry.player .conv-speaker {
+    color: var(--text-muted);
+}
+
+.conv-entry.player .conv-text {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-muted);
+    font-style: normal;
+    font-size: 0.9rem;
+}
+
+/* Abhimanyu entries — left-aligned, warm, italic, prominent */
+.conv-entry.abhimanyu {
+    align-self: flex-start;
+    align-items: flex-start;
+}
+
+.conv-entry.abhimanyu .conv-speaker {
+    color: var(--gold-muted);
+}
+
+.conv-entry.abhimanyu .conv-text {
+    background: rgba(184, 134, 11, 0.07);
+    border: 1px solid rgba(184, 134, 11, 0.2);
+    color: var(--gold-light);
+    font-style: italic;
+    font-size: 1.05rem;
+    text-shadow: 0 0 20px rgba(232, 213, 163, 0.1);
+}
+
+/* Mic status section */
+#mic-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.7rem;
+    margin-top: 0.5rem;
+    pointer-events: none;
+}
+
+#mic-status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #555;
+    transition:
+        background var(--transition-fast),
+        box-shadow var(--transition-fast);
+}
+
+#mic-status-dot.listening {
+    background: #2ecc71;
+    box-shadow:
+        0 0 8px rgba(46, 204, 113, 0.8),
+        0 0 20px rgba(46, 204, 113, 0.4);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+#mic-status-dot.not-listening {
+    background: #c0392b;
+    box-shadow: 0 0 6px rgba(192, 57, 43, 0.5);
+}
+
+#mic-status-text {
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+/* End conversation button */
+#end-conversation-btn {
+    margin-top: 1.5rem;
+    padding: 1rem 3rem;
+    background: transparent;
+    border: 1px solid var(--gold-deep);
+    color: var(--gold-light);
+    font-family: Georgia, serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.3em;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    pointer-events: all;
+    transition:
+        border-color var(--transition-fast),
+        color var(--transition-fast),
+        box-shadow var(--transition-fast);
+    animation: fadeIn 1s ease both;
+}
+
+#end-conversation-btn:hover,
+#end-conversation-btn:focus-visible {
+    border-color: var(--gold-bright);
+    color: var(--gold-bright);
+    box-shadow:
+        0 0 20px rgba(255, 215, 0, 0.25),
+        0 0 60px rgba(255, 215, 0, 0.1),
+        inset 0 0 20px rgba(255, 215, 0, 0.05);
+    outline: none;
+}
+
+/* ----------------------------------------------------------
+   OUTRO SCREEN — Ending sequence
+   ---------------------------------------------------------- */
+#outro-screen {
+    background: #000;
+    gap: 2rem;
+}
+
+#outro-text {
+    font-size: clamp(2rem, 6vw, 4.5rem);
+    letter-spacing: 0.2em;
+    color: var(--gold-light);
+    text-align: center;
+    text-shadow:
+        0 0 30px rgba(232, 213, 163, 0.5),
+        0 0 80px rgba(232, 213, 163, 0.2);
+    line-height: 1.3;
+    animation: fadeIn 2s ease both;
+    max-width: 80vw;
+}
+
+#outro-subtext {
+    font-size: 0.85rem;
+    letter-spacing: 0.35em;
+    color: var(--text-muted);
+    text-align: center;
+    text-transform: uppercase;
+    opacity: 0;
+    max-width: 60vw;
+    line-height: 1.8;
+    /* delay is set inline via JS */
+}
+
+#outro-subtext.visible {
+    animation: fadeIn 2s ease both;
+    opacity: 1;
+}
+
+/* ----------------------------------------------------------
+   CONTROLS HINT — Bottom-right corner
+   ---------------------------------------------------------- */
+#controls-hint {
+    position: fixed;
+    bottom: 24px;
+    right: 28px;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    pointer-events: none;
+    z-index: 35;
+    line-height: 1.8;
+    text-align: right;
+}
+
+/* ----------------------------------------------------------
+   BLACK FADE OVERLAY — JS-injected for transitions
+   ---------------------------------------------------------- */
+#fade-overlay {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--transition-slow);
+}
+
+#fade-overlay.opaque {
+    opacity: 1;
+}
+
+/* ----------------------------------------------------------
+   ANIMATIONS
+   ---------------------------------------------------------- */
+
+/* Generic fade in */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Title glow pulse */
+@keyframes glow {
+    0%,
+    100% {
+        text-shadow:
+            0 0 20px rgba(255, 215, 0, 0.6),
+            0 0 60px rgba(255, 215, 0, 0.3),
+            0 0 120px rgba(255, 215, 0, 0.15);
+    }
+    50% {
+        text-shadow:
+            0 0 30px rgba(255, 215, 0, 0.9),
+            0 0 80px rgba(255, 215, 0, 0.5),
+            0 0 160px rgba(255, 215, 0, 0.25);
+    }
+}
+
+/* Mic dot / ring-current pulse */
+@keyframes pulse {
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.5;
+        transform: scale(1.3);
+    }
+}
+
+/* Ring current dot outline pulse */
+@keyframes pulseDot {
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 215, 0, 0);
+        border-color: var(--gold-bright);
+    }
+    50% {
+        box-shadow: 0 0 0 5px rgba(255, 215, 0, 0.15);
+        border-color: rgba(255, 215, 0, 0.5);
+    }
+}
+
+/* Stillness warning opacity pulse */
+@keyframes pulseWarning {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.35;
+    }
+}
+
+/* Loading text slow fade pulse */
+@keyframes loadingPulse {
+    0%,
+    100% {
+        opacity: 0.6;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+/* ----------------------------------------------------------
+   RESPONSIVE TWEAKS
+   ---------------------------------------------------------- */
+@media (max-width: 600px) {
+    #dialogue-box {
+        bottom: 60px;
+        padding: 1.1rem 1.3rem;
+    }
+
+    #dialogue-text {
+        font-size: 0.9rem;
+    }
+
+    .cinematic-bar.active {
+        height: 50px;
+    }
+
+    #hud {
+        right: 16px;
+        top: 14px;
+    }
+
+    #controls-hint {
+        bottom: 16px;
+        right: 16px;
+    }
+
+    #conversation-ui {
+        padding: 2rem 1rem;
+    }
+
+    #abhimanyu-lines {
+        max-height: 55vh;
+    }
+}
+
+@media (max-width: 400px) {
+    .title-sanskrit {
+        font-size: 1.3rem;
+        letter-spacing: 0.25em;
+    }
+
+    #title-screen h1 {
+        letter-spacing: 0.12em;
+    }
+
+    #start-btn {
+        padding: 0.8rem 2rem;
+        font-size: 0.78rem;
+    }
+}
+
+/* ── Character portrait accents in dialogue box ───────────────────── */
+#dialogue-box[data-speaker="KRISHNA"] {
+    border-color: rgba(60, 100, 220, 0.5);
+}
+#dialogue-box[data-speaker="ABHIMANYU"] {
+    border-color: rgba(220, 120, 30, 0.5);
+}
+#dialogue-box[data-speaker="SUBHADRA"] {
+    border-color: rgba(200, 100, 130, 0.5);
+}
+
+#speaker-name[data-char="KRISHNA"] {
+    color: #6688ff;
+}
+#speaker-name[data-char="ABHIMANYU"] {
+    color: #ff9944;
+}
+#speaker-name[data-char="SUBHADRA"] {
+    color: #ff88aa;
+}

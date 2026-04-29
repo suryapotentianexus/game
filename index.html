@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>PADMAVYUH — VOICES OF DHARMA</title>
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <!-- ═══════════════════════════════════════════════════════════════
+       GAME CANVAS — fills entire screen; all rendering happens here
+  ════════════════════════════════════════════════════════════════ -->
+        <canvas id="gameCanvas" aria-label="Padmavyuh game canvas"></canvas>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+       UI OVERLAY — layered on top of the canvas (z-index 10)
+       pointer-events are managed per child so the canvas stays
+       interactive unless a modal/screen is active
+  ════════════════════════════════════════════════════════════════ -->
+        <div id="ui-overlay">
+            <!-- ── Cinematic Bars ──────────────────────────────────────── -->
+            <!-- Height animates from 0 → 80px when the .active class is   -->
+            <!-- toggled via JS (setCinematicMode).                         -->
+            <div class="cinematic-bar top" aria-hidden="true"></div>
+            <div class="cinematic-bar bottom" aria-hidden="true"></div>
+
+            <!-- ── TITLE SCREEN ───────────────────────────────────────── -->
+            <div id="title-screen" class="screen">
+                <!-- All content is wrapped so the CSS .title-content flex   -->
+                <!-- layout and fadeIn animation apply cleanly.              -->
+                <div class="title-content">
+                    <!-- Sanskrit name — styled with .title-sanskrit in CSS   -->
+                    <p class="title-sanskrit" lang="sa">पद्मव्यूह</p>
+
+                    <!-- Main title — CSS targets #title-screen h1            -->
+                    <h1>PADMAVYUH</h1>
+
+                    <!-- Tagline — .title-tagline in CSS (small-caps, muted)  -->
+                    <p class="title-tagline">VOICES OF DHARMA</p>
+
+                    <!-- Decorative gold rule                                  -->
+                    <div class="title-divider" aria-hidden="true"></div>
+
+                    <!-- Headphone + mic advisory — .title-warning in CSS     -->
+                    <p class="title-warning">
+                        🎧&nbsp; For the full experience, wear
+                        <strong>headphones</strong> and allow
+                        <strong>microphone</strong> access.
+                    </p>
+
+                    <!-- Entry point button                                    -->
+                    <button id="start-btn" aria-label="Begin the game">
+                        Begin
+                    </button>
+                </div>
+                <!-- /.title-content -->
+            </div>
+            <!-- /#title-screen -->
+
+            <!-- ── LOADING SCREEN ──────────────────────────────────────── -->
+            <div
+                id="loading-screen"
+                class="screen hidden"
+                role="status"
+                aria-live="polite"
+            >
+                <!-- Static label styled with .loading-text in CSS           -->
+                <p class="loading-text">Summoning voices…</p>
+
+                <!-- Dynamic status line updated by UI.updateLoading()       -->
+                <p id="loading-message"></p>
+
+                <div id="loading-bar-container" aria-label="Loading progress">
+                    <div id="loading-bar"></div>
+                </div>
+            </div>
+            <!-- /#loading-screen -->
+
+            <!-- ── DIALOGUE BOX ─────────────────────────────────────────
+         Floats near the bottom of the screen. Shown / hidden
+         via UI.showDialogue() / UI.hideDialogue() using CSS
+         opacity transitions (not the .hidden class directly,
+         so the transition can play before display:none).        -->
+            <div
+                id="dialogue-box"
+                class="hidden"
+                role="dialog"
+                aria-live="polite"
+                aria-atomic="true"
+            >
+                <div id="speaker-name" aria-label="Speaker"></div>
+                <div id="dialogue-text"></div>
+            </div>
+            <!-- /#dialogue-box -->
+
+            <!-- ── RING INDICATOR ──────────────────────────────────────
+         5 dots representing the five rings of the Padmavyuh.
+         Dot elements are injected programmatically by ui.js.   -->
+            <div
+                id="ring-indicator"
+                class="hidden"
+                role="progressbar"
+                aria-label="Padmavyuh ring progress"
+                aria-valuemin="0"
+                aria-valuemax="5"
+            ></div>
+            <!-- /#ring-indicator -->
+
+            <!-- ── HUD ─────────────────────────────────────────────────
+         Top-right status panel: current ring + item count.     -->
+            <div id="hud" class="hidden" aria-label="Heads up display">
+                <div id="hud-ring-name" class="hud-line"></div>
+                <div id="hud-items" class="hud-line">Items: 0 / 0</div>
+            </div>
+            <!-- /#hud -->
+
+            <!-- ── STILLNESS WARNING ───────────────────────────────────
+         Shown in ring 3 — player must remain motionless.
+         Class names match CSS: .warn-line-1 / .warn-line-2     -->
+            <div
+                id="stillness-warning"
+                class="hidden"
+                role="alert"
+                aria-live="assertive"
+            >
+                <span class="warn-line-1">Be still.</span>
+                <span class="warn-line-2">Breathe.</span>
+            </div>
+            <!-- /#stillness-warning -->
+
+            <!-- ── CONVERSATION UI (CLIMAX) ────────────────────────────
+         Full-screen panel presented when Arjuna reaches
+         Abhimanyu at the centre of the Padmavyuh.              -->
+            <div
+                id="conversation-ui"
+                class="screen hidden"
+                role="dialog"
+                aria-label="Conversation with Abhimanyu"
+                aria-modal="true"
+            >
+                <!-- Header: discovery line + character name               -->
+                <!-- #conv-header and #conv-title match CSS selectors      -->
+                <div id="conv-header">You have found him.</div>
+                <h2 id="conv-title">ABHIMANYU</h2>
+
+                <!-- Scrollable conversation history                        -->
+                <!-- Entries injected as .conv-entry.player / .abhimanyu   -->
+                <div
+                    id="abhimanyu-lines"
+                    role="log"
+                    aria-live="polite"
+                    aria-label="Conversation history"
+                ></div>
+                <!-- /#abhimanyu-lines -->
+
+                <!-- Microphone status indicator                            -->
+                <div id="mic-section" aria-live="polite">
+                    <div id="mic-status-row">
+                        <span id="mic-status-dot" aria-hidden="true"></span>
+                        <span id="mic-status-text">Waiting…</span>
+                    </div>
+                </div>
+                <!-- /#mic-section -->
+
+                <!-- Revealed by UI.showEndConversationButton() after       -->
+                <!-- sufficient dialogue has been exchanged.               -->
+                <button
+                    id="end-conversation-btn"
+                    class="hidden"
+                    aria-label="Lead Abhimanyu home"
+                >
+                    Lead him home&nbsp;→
+                </button>
+            </div>
+            <!-- /#conversation-ui -->
+
+            <!-- ── OUTRO SCREEN ────────────────────────────────────────
+         Final state after the conversation concludes.          -->
+            <div
+                id="outro-screen"
+                class="screen hidden"
+                role="region"
+                aria-label="Game ending"
+            >
+                <p id="outro-text"></p>
+                <p id="outro-subtext"></p>
+            </div>
+            <!-- /#outro-screen -->
+
+            <!-- ── CONTROLS HINT ───────────────────────────────────────
+         Persistent corner label once gameplay begins.          -->
+            <div
+                id="controls-hint"
+                class="hidden"
+                aria-label="Movement controls"
+            >
+                WASD / Arrow keys to move
+            </div>
+            <!-- /#controls-hint -->
+        </div>
+        <!-- /#ui-overlay -->
+
+        <!-- ═══════════════════════════════════════════════════════════════
+       SCRIPTS
+       1. ElevenLabs UMD client — must be present before the module
+          so that window.ElevenLabsClient is available globally.
+       2. Game entry point as an ES module.
+  ════════════════════════════════════════════════════════════════ -->
+        <script src="https://cdn.jsdelivr.net/npm/@11labs/client/dist/index.umd.js"></script>
+        <script type="module" src="js/main.js"></script>
+    </body>
+</html>
