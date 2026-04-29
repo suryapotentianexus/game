@@ -1,164 +1,212 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>PADMAVYUH — Simple Build</title>
-  <style>
-    html,body{margin:0;height:100%;background:#000;color:#f5d25c;font-family:Georgia,serif}
-    #game{display:block;width:100vw;height:100vh;background:#02030a}
-    .overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;background:radial-gradient(circle,#0a0a20 0%,#000 70%)}
-    button{padding:12px 26px;background:#101020;border:1px solid #f5d25c;color:#f5d25c;font-size:18px;cursor:pointer}
-    input{padding:10px;width:420px;max-width:90vw;background:#080813;color:#eee;border:1px solid #555}
-    #hud{position:fixed;top:10px;left:10px;font-size:14px;line-height:1.4;background:rgba(0,0,0,.45);padding:8px 10px;border:1px solid #444;display:none}
-    #end{display:none}
-  </style>
-</head>
-<body>
-<canvas id="game"></canvas>
-<div id="hud"></div>
-<div id="start" class="overlay">
-  <h1>PADMAVYUH</h1>
-  <p>Simple playable hackathon build. Use WASD / Arrow Keys. Reach the center.</p>
-  <input id="apiKey" placeholder="Enter ElevenLabs API key (xi-api-key)" />
-  <button id="startBtn">Start Game</button>
-</div>
-<div id="end" class="overlay">
-  <h2>You found him.</h2>
-  <button onclick="location.reload()">Restart</button>
-</div>
-<script>
-const AGENT_ID = "agent_6001kqakwmw4e6cv8nd5wj3vgp5p"; // reserved for later conversational mode
-const KRISHNA_VOICE_ID = "pNInz6obpgDQGcFmaJgB";
-const ABHIMANYU_VOICE_ID = "IKne3meq5aSn9XLyUdCD";
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>PADMAVYUH — VOICES OF DHARMA</title>
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <!-- ═══════════════════════════════════════════════════════════════
+       GAME CANVAS — fills entire screen; all rendering happens here
+  ════════════════════════════════════════════════════════════════ -->
+        <canvas id="gameCanvas" aria-label="Padmavyuh game canvas"></canvas>
 
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-const hud = document.getElementById('hud');
-let w,h,cx,cy;
-function resize(){w=canvas.width=innerWidth;h=canvas.height=innerHeight;cx=w/2;cy=h/2}
-addEventListener('resize', resize); resize();
+        <!-- ═══════════════════════════════════════════════════════════════
+       UI OVERLAY — layered on top of the canvas (z-index 10)
+       pointer-events are managed per child so the canvas stays
+       interactive unless a modal/screen is active
+  ════════════════════════════════════════════════════════════════ -->
+        <div id="ui-overlay">
+            <!-- ── Cinematic Bars ──────────────────────────────────────── -->
+            <!-- Height animates from 0 → 80px when the .active class is   -->
+            <!-- toggled via JS (setCinematicMode).                         -->
+            <div class="cinematic-bar top" aria-hidden="true"></div>
+            <div class="cinematic-bar bottom" aria-hidden="true"></div>
 
-const player={x:80,y:80,r:9,speed:3};
-const center={x:()=>cx,y:()=>cy,r:28};
-const keys={};
-let started=false, finished=false;
-let apiKey='';
-let activeAudio=[];
+            <!-- ── TITLE SCREEN ───────────────────────────────────────── -->
+            <div id="title-screen" class="screen">
+                <!-- All content is wrapped so the CSS .title-content flex   -->
+                <!-- layout and fadeIn animation apply cleanly.              -->
+                <div class="title-content">
+                    <!-- Sanskrit name — styled with .title-sanskrit in CSS   -->
+                    <p class="title-sanskrit" lang="sa">पद्मव्यूह</p>
 
-const rings=[
-  {size:520,gapSide:'top',gapStart:-55,gapEnd:55},
-  {size:380,gapSide:'right',gapStart:-40,gapEnd:40},
-  {size:250,gapSide:'bottom',gapStart:-45,gapEnd:45}
-];
+                    <!-- Main title — CSS targets #title-screen h1            -->
+                    <h1>PADMAVYUH</h1>
 
-function ringWalls(r){
-  const hs=r.size/2, x=cx-hs, y=cy-hs, s=r.size;
-  const seg=[];
-  const cut=(a,b)=>[{a:a,b:b}];
-  if(r.gapSide==='top'){
-    seg.push({x1:x,y1:y,x2:cx+r.gapStart,y2:y},{x1:cx+r.gapEnd,y1:y,x2:x+s,y2:y});
-    seg.push({x1:x,y1:y,x2:x,y2:y+s},{x1:x+s,y1:y,x2:x+s,y2:y+s},{x1:x,y1:y+s,x2:x+s,y2:y+s});
-  } else if(r.gapSide==='right'){
-    seg.push({x1:x+s,y1:y,x2:x+s,y2:cy+r.gapStart},{x1:x+s,y1:cy+r.gapEnd,x2:x+s,y2:y+s});
-    seg.push({x1:x,y1:y,x2:x+s,y2:y},{x1:x,y1:y+s,x2:x+s,y2:y+s},{x1:x,y1:y,x2:x,y2:y+s});
-  } else {
-    seg.push({x1:x,y1:y+s,x2:cx+r.gapStart,y2:y+s},{x1:cx+r.gapEnd,y1:y+s,x2:x+s,y2:y+s});
-    seg.push({x1:x,y1:y,x2:x+s,y2:y},{x1:x,y1:y,x2:x,y2:y+s},{x1:x+s,y1:y,x2:x+s,y2:y+s});
-  }
-  return seg;
-}
+                    <!-- Tagline — .title-tagline in CSS (small-caps, muted)  -->
+                    <p class="title-tagline">VOICES OF DHARMA</p>
 
-function collides(nx,ny){
-  const pad=player.r+1;
-  for(const r of rings){
-    for(const s of ringWalls(r)){
-      if(s.x1===s.x2){ // vertical
-        const minY=Math.min(s.y1,s.y2), maxY=Math.max(s.y1,s.y2);
-        if(Math.abs(nx-s.x1)<=pad && ny>=minY-pad && ny<=maxY+pad) return true;
-      }else{ // horizontal
-        const minX=Math.min(s.x1,s.x2), maxX=Math.max(s.x1,s.x2);
-        if(Math.abs(ny-s.y1)<=pad && nx>=minX-pad && nx<=maxX+pad) return true;
-      }
-    }
-  }
-  return nx<player.r||ny<player.r||nx>w-player.r||ny>h-player.r;
-}
+                    <!-- Decorative gold rule                                  -->
+                    <div class="title-divider" aria-hidden="true"></div>
 
-async function speakEleven(text,voiceId,volume=1){
-  if(!apiKey) return;
-  try{
-    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,{
-      method:'POST',
-      headers:{'xi-api-key':apiKey,'Content-Type':'application/json'},
-      body:JSON.stringify({text,model_id:'eleven_monolingual_v1'})
-    });
-    if(!res.ok){
-      const t=await res.text();
-      console.error('ElevenLabs TTS failed:',res.status,t);
-      return;
-    }
-    const blob=await res.blob();
-    const url=URL.createObjectURL(blob);
-    const audio=new Audio(url);
-    audio.volume=Math.max(0,Math.min(1,volume));
-    activeAudio.push(audio);
-    audio.onended=()=>URL.revokeObjectURL(url);
-    await audio.play();
-  }catch(err){console.error('Audio playback error:',err)}
-}
+                    <!-- Headphone + mic advisory — .title-warning in CSS     -->
+                    <p class="title-warning">
+                        🎧&nbsp; For the full experience, wear
+                        <strong>headphones</strong> and allow
+                        <strong>microphone</strong> access.
+                    </p>
 
-function hintText(){
-  const dx=cx-player.x, dy=cy-player.y;
-  if(Math.abs(dx)>Math.abs(dy)) return dx>0?'Go right':'Go left';
-  return dy>0?'Move down':'Move up';
-}
+                    <!-- Entry point button                                    -->
+                    <button id="start-btn" aria-label="Begin the game">
+                        Begin
+                    </button>
+                </div>
+                <!-- /.title-content -->
+            </div>
+            <!-- /#title-screen -->
 
-function loop(){
-  if(!started) return;
-  let vx=(keys['ArrowRight']||keys['d']?1:0)-(keys['ArrowLeft']||keys['a']?1:0);
-  let vy=(keys['ArrowDown']||keys['s']?1:0)-(keys['ArrowUp']||keys['w']?1:0);
-  const len=Math.hypot(vx,vy)||1; vx/=len; vy/=len;
-  const nx=player.x+vx*player.speed, ny=player.y+vy*player.speed;
-  if(!collides(nx,player.y)) player.x=nx;
-  if(!collides(player.x,ny)) player.y=ny;
+            <!-- ── LOADING SCREEN ──────────────────────────────────────── -->
+            <div
+                id="loading-screen"
+                class="screen hidden"
+                role="status"
+                aria-live="polite"
+            >
+                <!-- Static label styled with .loading-text in CSS           -->
+                <p class="loading-text">Summoning voices…</p>
 
-  const dist=Math.hypot(player.x-cx,player.y-cy);
-  if(dist<center.r+8 && !finished){ endGame(); }
+                <!-- Dynamic status line updated by UI.updateLoading()       -->
+                <p id="loading-message"></p>
 
-  draw(dist);
-  requestAnimationFrame(loop);
-}
+                <div id="loading-bar-container" aria-label="Loading progress">
+                    <div id="loading-bar"></div>
+                </div>
+            </div>
+            <!-- /#loading-screen -->
 
-function draw(dist){
-  ctx.fillStyle='#01030d'; ctx.fillRect(0,0,w,h);
-  ctx.strokeStyle='rgba(245,210,92,.6)'; ctx.lineWidth=3;
-  for(const r of rings){ for(const s of ringWalls(r)){ ctx.beginPath();ctx.moveTo(s.x1,s.y1);ctx.lineTo(s.x2,s.y2);ctx.stroke(); } }
-  ctx.beginPath(); ctx.arc(cx,cy,center.r,0,Math.PI*2); ctx.fillStyle='rgba(255,180,80,.15)'; ctx.fill();
-  ctx.beginPath(); ctx.arc(player.x,player.y,player.r+8,0,Math.PI*2); ctx.fillStyle='rgba(120,180,255,.2)'; ctx.fill();
-  ctx.beginPath(); ctx.arc(player.x,player.y,player.r,0,Math.PI*2); ctx.fillStyle='#9dd0ff'; ctx.fill();
-  hud.textContent=`Agent: ${AGENT_ID} | Distance to center: ${Math.round(dist)}`;
-}
+            <!-- ── DIALOGUE BOX ─────────────────────────────────────────
+         Floats near the bottom of the screen. Shown / hidden
+         via UI.showDialogue() / UI.hideDialogue() using CSS
+         opacity transitions (not the .hidden class directly,
+         so the transition can play before display:none).        -->
+            <div
+                id="dialogue-box"
+                class="hidden"
+                role="dialog"
+                aria-live="polite"
+                aria-atomic="true"
+            >
+                <div id="speaker-name" aria-label="Speaker"></div>
+                <div id="dialogue-text"></div>
+            </div>
+            <!-- /#dialogue-box -->
 
-async function endGame(){
-  finished=true; started=false;
-  await speakEleven('Abhimanyu... I found you.',ABHIMANYU_VOICE_ID,1);
-  document.getElementById('end').style.display='flex';
-}
+            <!-- ── RING INDICATOR ──────────────────────────────────────
+         5 dots representing the five rings of the Padmavyuh.
+         Dot elements are injected programmatically by ui.js.   -->
+            <div
+                id="ring-indicator"
+                class="hidden"
+                role="progressbar"
+                aria-label="Padmavyuh ring progress"
+                aria-valuemin="0"
+                aria-valuemax="5"
+            ></div>
+            <!-- /#ring-indicator -->
 
-document.getElementById('startBtn').addEventListener('click', async()=>{
-  apiKey=document.getElementById('apiKey').value.trim();
-  document.getElementById('start').style.display='none';
-  hud.style.display='block';
-  started=true;
-  await speakEleven('Arjuna, listen carefully. Reach your son at the center.',KRISHNA_VOICE_ID,1);
-  setInterval(()=>{ if(started&&!finished) speakEleven(hintText(),KRISHNA_VOICE_ID,0.95); },6000);
-  setInterval(()=>{ if(started&&!finished){ const d=Math.hypot(player.x-cx,player.y-cy); const v=Math.max(0.15,1-d/700); speakEleven('Father... I am here.',ABHIMANYU_VOICE_ID,v);} },9000);
-  requestAnimationFrame(loop);
-});
+            <!-- ── HUD ─────────────────────────────────────────────────
+         Top-right status panel: current ring + item count.     -->
+            <div id="hud" class="hidden" aria-label="Heads up display">
+                <div id="hud-ring-name" class="hud-line"></div>
+                <div id="hud-items" class="hud-line">Items: 0 / 0</div>
+            </div>
+            <!-- /#hud -->
 
-addEventListener('keydown',e=>keys[e.key]=true);
-addEventListener('keyup',e=>keys[e.key]=false);
-</script>
-</body>
+            <!-- ── STILLNESS WARNING ───────────────────────────────────
+         Shown in ring 3 — player must remain motionless.
+         Class names match CSS: .warn-line-1 / .warn-line-2     -->
+            <div
+                id="stillness-warning"
+                class="hidden"
+                role="alert"
+                aria-live="assertive"
+            >
+                <span class="warn-line-1">Be still.</span>
+                <span class="warn-line-2">Breathe.</span>
+            </div>
+            <!-- /#stillness-warning -->
+
+            <!-- ── CONVERSATION UI (CLIMAX) ────────────────────────────
+         Full-screen panel presented when Arjuna reaches
+         Abhimanyu at the centre of the Padmavyuh.              -->
+            <div
+                id="conversation-ui"
+                class="screen hidden"
+                role="dialog"
+                aria-label="Conversation with Abhimanyu"
+                aria-modal="true"
+            >
+                <!-- Header: discovery line + character name               -->
+                <!-- #conv-header and #conv-title match CSS selectors      -->
+                <div id="conv-header">You have found him.</div>
+                <h2 id="conv-title">ABHIMANYU</h2>
+
+                <!-- Scrollable conversation history                        -->
+                <!-- Entries injected as .conv-entry.player / .abhimanyu   -->
+                <div
+                    id="abhimanyu-lines"
+                    role="log"
+                    aria-live="polite"
+                    aria-label="Conversation history"
+                ></div>
+                <!-- /#abhimanyu-lines -->
+
+                <!-- Microphone status indicator                            -->
+                <div id="mic-section" aria-live="polite">
+                    <div id="mic-status-row">
+                        <span id="mic-status-dot" aria-hidden="true"></span>
+                        <span id="mic-status-text">Waiting…</span>
+                    </div>
+                </div>
+                <!-- /#mic-section -->
+
+                <!-- Revealed by UI.showEndConversationButton() after       -->
+                <!-- sufficient dialogue has been exchanged.               -->
+                <button
+                    id="end-conversation-btn"
+                    class="hidden"
+                    aria-label="Lead Abhimanyu home"
+                >
+                    Lead him home&nbsp;→
+                </button>
+            </div>
+            <!-- /#conversation-ui -->
+
+            <!-- ── OUTRO SCREEN ────────────────────────────────────────
+         Final state after the conversation concludes.          -->
+            <div
+                id="outro-screen"
+                class="screen hidden"
+                role="region"
+                aria-label="Game ending"
+            >
+                <p id="outro-text"></p>
+                <p id="outro-subtext"></p>
+            </div>
+            <!-- /#outro-screen -->
+
+            <!-- ── CONTROLS HINT ───────────────────────────────────────
+         Persistent corner label once gameplay begins.          -->
+            <div
+                id="controls-hint"
+                class="hidden"
+                aria-label="Movement controls"
+            >
+                WASD / Arrow keys to move
+            </div>
+            <!-- /#controls-hint -->
+        </div>
+        <!-- /#ui-overlay -->
+
+        <!-- ═══════════════════════════════════════════════════════════════
+       SCRIPTS
+       1. ElevenLabs UMD client — must be present before the module
+          so that window.ElevenLabsClient is available globally.
+       2. Game entry point as an ES module.
+  ════════════════════════════════════════════════════════════════ -->
+        <script src="https://cdn.jsdelivr.net/npm/@11labs/client/dist/index.umd.js"></script>
+        <script type="module" src="js/main.js"></script>
+    </body>
 </html>
